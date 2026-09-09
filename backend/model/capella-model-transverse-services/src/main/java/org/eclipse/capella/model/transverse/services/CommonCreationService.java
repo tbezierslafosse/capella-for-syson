@@ -61,6 +61,8 @@ public class CommonCreationService {
 
     private final CommonQueryService commonQueryService;
 
+    private final CapellaElementCompatibilityChecker capellaElementCompatibilityChecker;
+
     private final CommonUpdateService commonUpdateService;
 
     private final ArcadiaLibraryServices arcadiaLibraryServices;
@@ -71,6 +73,7 @@ public class CommonCreationService {
 
     public CommonCreationService() {
         this.commonQueryService = new CommonQueryService();
+        this.capellaElementCompatibilityChecker = new CapellaElementCompatibilityChecker();
         this.commonUpdateService = new CommonUpdateService();
         this.arcadiaLibraryServices = new ArcadiaLibraryServices();
         this.metamodelMutationElementService = new MetamodelMutationElementService();
@@ -107,6 +110,9 @@ public class CommonCreationService {
     }
 
     public RequirementUsage createRequirement(Element parent) {
+        if (!this.capellaElementCompatibilityChecker.isValidRequirementOwner(parent)) {
+            return null;
+        }
         RequirementUsage requirementUsage = null;
         Optional<Package> optionalRequirementsPackage = this.commonQueryService.getRequirementsPackage(parent);
         if (optionalRequirementsPackage.isPresent()) {
@@ -124,6 +130,9 @@ public class CommonCreationService {
     }
 
     public PartUsage createComponent(Element parent) {
+        if (!this.capellaElementCompatibilityChecker.isValidComponentOwner(parent)) {
+            return null;
+        }
         PartUsage partUsage = null;
         Optional<Element> optionalTargetContainer = Optional.of(parent);
         if (!this.commonQueryService.isComponent(parent)) {
@@ -153,6 +162,9 @@ public class CommonCreationService {
     }
 
     public PortUsage createComponentPort(PartUsage container, FeatureDirectionKind direction) {
+        if (!this.capellaElementCompatibilityChecker.isValidComponentPortOwner(container)) {
+            return null;
+        }
         container.unsetDirection();
         PortUsage portUsage = SysmlFactory.eINSTANCE.createPortUsage();
         portUsage.setDirection(direction);
@@ -164,6 +176,9 @@ public class CommonCreationService {
     }
 
     public PartUsage createActor(Element parent) {
+        if (!this.capellaElementCompatibilityChecker.isValidActorOwner(parent)) {
+            return null;
+        }
         PartUsage partUsage = null;
         Optional<Element> optionalTargetContainer = Optional.of(parent);
         if (!this.commonQueryService.isComponent(parent)) {
@@ -185,6 +200,9 @@ public class CommonCreationService {
     }
 
     public ActionUsage createFunction(Element parent) {
+        if (!this.capellaElementCompatibilityChecker.isValidFunctionOwner(parent)) {
+            return null;
+        }
         ActionUsage actionUsage = null;
         Optional<Element> optionalParent = Optional.ofNullable(parent)
                 .filter(this.commonQueryService::isFunction)
@@ -223,6 +241,9 @@ public class CommonCreationService {
     }
 
     public ItemUsage createFunctionPort(ActionUsage container, FeatureDirectionKind direction) {
+        if (!this.capellaElementCompatibilityChecker.isValidFunctionPortOwner(container)) {
+            return null;
+        }
         ItemUsage itemUsage = SysmlFactory.eINSTANCE.createItemUsage();
         itemUsage.setDirection(direction);
         this.metamodelMutationElementService.addChildInParent(container, itemUsage);
@@ -242,7 +263,8 @@ public class CommonCreationService {
         Optional<Package> optionalSourceFunctionsPackage = this.commonQueryService.getFunctionsPackage(source);
         Optional<Package> optionalTargetFunctionsPackage = this.commonQueryService.getFunctionsPackage(target);
 
-        if (optionalSourceFunctionsPackage.isPresent() && optionalSourceFunctionsPackage.equals(optionalTargetFunctionsPackage)) {
+        if (this.capellaElementCompatibilityChecker.areValidFunctionalExchangeEnds(source, target)
+                && optionalSourceFunctionsPackage.isPresent() && optionalSourceFunctionsPackage.equals(optionalTargetFunctionsPackage)) {
 
             if (this.commonQueryService.canCreateFunctionalExchange(source, target)) {
 
@@ -272,7 +294,8 @@ public class CommonCreationService {
         Optional<Package> optionalSourceStructurePackage = this.commonQueryService.getStructurePackage(source);
         Optional<Package> optionalTargetStructurePackage = this.commonQueryService.getStructurePackage(target);
 
-        if (optionalSourceStructurePackage.isPresent() && optionalSourceStructurePackage.equals(optionalTargetStructurePackage)) {
+        if (this.capellaElementCompatibilityChecker.areValidComponentExchangeEnds(source, target)
+                && optionalSourceStructurePackage.isPresent() && optionalSourceStructurePackage.equals(optionalTargetStructurePackage)) {
 
             if (this.commonQueryService.canCreateComponentExchange(source, target)) {
 
@@ -295,12 +318,18 @@ public class CommonCreationService {
     }
 
     public AllocationUsage createDescribes(Element source, Element target) {
+        if (!this.capellaElementCompatibilityChecker.areValidDescribesEnds(source, target)) {
+            return null;
+        }
         AllocationUsage allocation = this.metamodelMutationElementService.createAllocateEdge(source, target);
         this.metamodelMutationElementService.initialize(allocation);
         return allocation;
     }
 
     public OccurrenceUsage createOperationalCapability(Element parent) {
+        if (!this.capellaElementCompatibilityChecker.isValidOperationalCapabilityOwner(parent)) {
+            return null;
+        }
         return this.commonQueryService.getCapabilitiesPackage(parent)
                 .map(capabilitiesPackage -> {
                     var capability = SysmlFactory.eINSTANCE.createOccurrenceUsage();
@@ -313,6 +342,9 @@ public class CommonCreationService {
     }
 
     public ActionUsage createFunctionalChain(Element container, List<Object> selectedObjects) {
+        if (!this.capellaElementCompatibilityChecker.isValidFunctionalChain(container, selectedObjects)) {
+            return null;
+        }
         ActionUsage actionUsage = null;
         List<Element> selectedElements = selectedObjects.stream()
                 .filter(Element.class::isInstance)

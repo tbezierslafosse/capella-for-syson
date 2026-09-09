@@ -70,6 +70,7 @@ This service overrides the default behavior of `SysMLMoveElementService` so Cape
 - https://github.com/eclipse-capella/capella-for-syson/issues/196[#196] [enh] Add Operational Activity node to OAB
 - https://github.com/eclipse-capella/capella-for-syson/issues/196[#196] [enh] Add Operational Activity drop to OAB
 - https://github.com/eclipse-capella/capella-for-syson/issues/184[#184] [diagrams] Improve System Analysis Blank diagram style
+- https://github.com/eclipse-capella/capella-for-syson/issues/130[#130] [services] Add a service to check semantic mutations.
 
 == 2026.9.0
 
