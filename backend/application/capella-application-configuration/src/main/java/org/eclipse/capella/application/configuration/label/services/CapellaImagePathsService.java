@@ -23,6 +23,7 @@ import static org.eclipse.capella.model.transverse.services.CommonQueryService.A
 import static org.eclipse.capella.model.transverse.services.CommonQueryService.ARCADIA_FUNCTIONAL_EXCHANGE;
 import static org.eclipse.capella.model.transverse.services.CommonQueryService.ARCADIA_PREFIX;
 import static org.eclipse.capella.model.transverse.services.CommonQueryService.ARCADIA_REQUIREMENT;
+import static org.eclipse.capella.model.transverse.services.CommonQueryService.ARCADIA_MISSION;
 
 import java.util.List;
 import java.util.Objects;
@@ -105,9 +106,10 @@ public class CapellaImagePathsService {
      * @return the optional image path.
      */
     public Optional<String> getImageFromArcadiaType(ArcadiaEngineeringPerspective perspective, Element element, String arcadiaType) {
-        String imageName = switch (arcadiaType) {
+        var imageName = switch (arcadiaType) {
             case ARCADIA_COMPONENT -> this.computeComponentIcon(perspective, arcadiaType, element).orElse(null);
             case ARCADIA_FUNCTION -> this.computeFunctionIcon(perspective, arcadiaType, element).orElse(null);
+            case ARCADIA_MISSION -> ARCADIA_MISSION;
             case ARCADIA_CAPABILITY -> this.computeCapabilityIcon(perspective, arcadiaType);
             case ARCADIA_COMPONENT_PORT -> "FlowPort";
             case ARCADIA_COMPONENT_EXCHANGE -> arcadiaType;

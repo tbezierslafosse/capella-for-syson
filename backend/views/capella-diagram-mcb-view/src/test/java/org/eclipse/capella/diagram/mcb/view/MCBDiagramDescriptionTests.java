@@ -14,6 +14,8 @@ package org.eclipse.capella.diagram.mcb.view;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.eclipse.sirius.components.view.diagram.InsideLabelPosition;
+import org.eclipse.sirius.components.view.diagram.OutsideLabelPosition;
 import org.eclipse.sirius.components.view.diagram.RectangularNodeStyleDescription;
 import org.eclipse.sirius.components.view.diagram.SynchronizationPolicy;
 import org.eclipse.sirius.components.view.diagram.UserResizableDirection;
@@ -52,7 +54,7 @@ public class MCBDiagramDescriptionTests extends AbstractEditableDiagramDescripti
     public void nodesShouldHaveCompletePalettesAndRemainUnsynchronized() {
         var nodes = this.diagramDescription.getNodeDescriptions();
         assertThat(nodes).extracting(node -> node.getName())
-                .containsExactlyInAnyOrder("SystemActorNodeDescription", "RequirementNodeDescription");
+                .containsExactlyInAnyOrder("SystemActorNodeDescription", "MissionNodeDescription", "CapabilityNodeDescription", "RequirementNodeDescription");
         assertThat(nodes).allSatisfy(node -> {
             assertThat(node.getSynchronizationPolicy()).isEqualTo(SynchronizationPolicy.UNSYNCHRONIZED);
             assertThat(node.getPalette().getLabelEditTool()).isNotNull();
@@ -63,7 +65,27 @@ public class MCBDiagramDescriptionTests extends AbstractEditableDiagramDescripti
         assertThat(nodes).filteredOn(node -> "SystemActorNodeDescription".equals(node.getName()) || "RequirementNodeDescription".equals(node.getName()))
                 .allSatisfy(node -> assertThat(node.getUserResizable()).isEqualTo(UserResizableDirection.BOTH));
         assertThat(this.diagramDescription.getPalette().getNodeTools()).extracting(tool -> tool.getName())
-                .containsExactly("New System Actor", "New Requirement");
+                .containsExactly("New System Actor", "New Mission", "New Capability", "New Requirement");
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "CapabilityNodeDescription, C", "MissionNodeDescription, M" })
+    public void purposesShouldUseTheStandardCircularPresentation(String descriptionName, String symbol) {
+        var node = this.diagramDescription.getNodeDescriptions().stream().filter(candidate -> descriptionName.equals(candidate.getName())).findFirst().orElseThrow();
+        assertThat(node.getStyle()).isInstanceOfSatisfying(RectangularNodeStyleDescription.class, style -> {
+            assertThat(style.getBorderRadius()).isEqualTo(100);
+            assertThat(style.getBorderSize()).isEqualTo(2);
+        });
+        assertThat(node.getDefaultWidthExpression()).isEqualTo("72");
+        assertThat(node.getDefaultHeightExpression()).isEqualTo("72");
+        assertThat(node.getUserResizable()).isEqualTo(UserResizableDirection.NONE);
+        assertThat(node.getInsideLabel().getLabelExpression()).isEqualTo("aql:'" + symbol + "'");
+        assertThat(node.getInsideLabel().getPosition()).isEqualTo(InsideLabelPosition.MIDDLE_CENTER);
+        assertThat(node.getOutsideLabels()).singleElement().satisfies(label -> {
+            assertThat(label.getLabelExpression()).isEqualTo("aql:self.name");
+            assertThat(label.getPosition()).isEqualTo(OutsideLabelPosition.BOTTOM_CENTER);
+        });
+        assertThat(node.getReusedChildNodeDescriptions()).isEmpty();
     }
 
     @ParameterizedTest

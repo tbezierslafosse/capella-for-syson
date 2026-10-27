@@ -144,7 +144,11 @@ public class MCBViewDropService {
 
     private Optional<String> getDescriptionId(Element element, Map<org.eclipse.sirius.components.view.diagram.NodeDescription, NodeDescription> convertedNodes) {
         String name;
-        if (this.commonQueryService.isSystemAnalysisActor(element)) {
+        if (this.commonQueryService.isMission(element)) {
+            name = "MissionNodeDescription";
+        } else if (this.commonQueryService.isCapability(element)) {
+            name = "CapabilityNodeDescription";
+        } else if (this.commonQueryService.isSystemAnalysisActor(element)) {
             name = "SystemActorNodeDescription";
         } else {
             name = "RequirementNodeDescription";

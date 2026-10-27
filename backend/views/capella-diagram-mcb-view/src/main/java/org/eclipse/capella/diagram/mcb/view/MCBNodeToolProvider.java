@@ -24,7 +24,7 @@ import org.eclipse.syson.util.AQLUtils;
 import org.eclipse.syson.util.ServiceMethod;
 
 /**
- * Creation tools for MCB nodes.
+ * Creation tools for the four MCB concepts.
  *
  * @author tbezierslafosse
  */
@@ -38,6 +38,14 @@ public class MCBNodeToolProvider {
         var tool = this.createTool(cache, "SystemActorNodeDescription", "New System Actor", "SystemActor", ServiceMethod.of0(CommonCreationService::createHumanActor).aqlSelf());
         tool.setPreconditionExpression(ServiceMethod.of0(MCBViewQueryService::canCreateActor).aqlSelf());
         return tool;
+    }
+
+    public NodeTool createMissionTool(IViewDiagramElementFinder cache) {
+        return this.createTool(cache, "MissionNodeDescription", "New Mission", "Mission", ServiceMethod.of0(CommonCreationService::createMission).aqlSelf());
+    }
+
+    public NodeTool createCapabilityTool(IViewDiagramElementFinder cache) {
+        return this.createTool(cache, "CapabilityNodeDescription", "New Capability", "Capability", ServiceMethod.of0(CommonCreationService::createCapability).aqlSelf());
     }
 
     public NodeTool createRequirementTool(IViewDiagramElementFinder cache) {

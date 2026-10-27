@@ -36,6 +36,16 @@ public class MCBViewQueryService {
 
     private final UtilService utilService = new UtilService();
 
+    public List<Element> getMissionCandidates(EObject context) {
+        return this.commonQueryService.getMissions(context).stream().filter(this::isInSystemAnalysis).map(Element.class::cast).toList();
+    }
+
+    public List<Element> getCapabilityCandidates(EObject context) {
+        return this.utilService.getAllReachable(context, SysmlPackage.eINSTANCE.getOccurrenceUsage()).stream()
+                .filter(this.commonQueryService::isCapability).filter(Element.class::isInstance).map(Element.class::cast)
+                .filter(this::isInSystemAnalysis).toList();
+    }
+
     public List<Element> getRequirementCandidates(EObject context) {
         return this.utilService.getAllReachable(context, SysmlPackage.eINSTANCE.getRequirementUsage()).stream()
                 .filter(Element.class::isInstance).map(Element.class::cast).filter(this::isInSystemAnalysis)
@@ -82,7 +92,8 @@ public class MCBViewQueryService {
         if (element instanceof PartUsage actor) {
             return !this.getActorPath(actor).isEmpty() && this.utilService.getAllReachable(context, SysmlPackage.eINSTANCE.getPartUsage()).contains(actor);
         }
-        return this.getRequirementCandidates(context).contains(element);
+        return this.getMissionCandidates(context).contains(element) || this.getCapabilityCandidates(context).contains(element)
+                || this.getRequirementCandidates(context).contains(element);
     }
 
     private boolean isInSystemAnalysis(Element element) {

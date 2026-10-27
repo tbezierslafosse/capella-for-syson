@@ -15,6 +15,8 @@ package org.eclipse.capella.diagram.mcb.view;
 import java.util.List;
 
 import org.eclipse.capella.diagram.mcb.view.nodes.actor.SystemActorNodeDescriptionProvider;
+import org.eclipse.capella.diagram.mcb.view.nodes.mission.MissionNodeDescriptionProvider;
+import org.eclipse.capella.diagram.mcb.view.nodes.capability.CapabilityNodeDescriptionProvider;
 import org.eclipse.capella.diagram.mcb.view.nodes.requirement.RequirementNodeDescriptionProvider;
 import org.eclipse.capella.diagram.mcb.view.nodes.requirement.compartment.MCBCompartmentNodeDescriptionProvider;
 import org.eclipse.capella.diagram.mcb.view.nodes.requirement.compartment.MCBCompartmentItemNodeDescriptionProvider;
@@ -59,7 +61,9 @@ public class MCBViewDiagramDescriptionProvider implements IRepresentationDescrip
                 .build();
 
         var cache = new ViewDiagramElementFinder();
-        var providers = List.of(new SystemActorNodeDescriptionProvider(colorProvider), new MCBCompartmentItemNodeDescriptionProvider(SysmlPackage.eINSTANCE.getRequirementUsage(), SysmlPackage.eINSTANCE.getElement_Documentation(), colorProvider),
+        var providers = List.of(new SystemActorNodeDescriptionProvider(colorProvider), new MissionNodeDescriptionProvider(colorProvider),
+                new CapabilityNodeDescriptionProvider(colorProvider),
+                new MCBCompartmentItemNodeDescriptionProvider(SysmlPackage.eINSTANCE.getRequirementUsage(), SysmlPackage.eINSTANCE.getElement_Documentation(), colorProvider),
                 new MCBCompartmentNodeDescriptionProvider(SysmlPackage.eINSTANCE.getRequirementUsage(), SysmlPackage.eINSTANCE.getElement_Documentation(), colorProvider),
                 new RequirementNodeDescriptionProvider(colorProvider));
         providers.stream().map(IDiagramElementDescriptionProvider::create).forEach(cache::put);

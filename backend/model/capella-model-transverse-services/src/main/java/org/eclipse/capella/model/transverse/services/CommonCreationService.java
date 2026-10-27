@@ -34,6 +34,7 @@ import java.util.Optional;
 
 import org.eclipse.syson.services.UtilService;
 import org.eclipse.syson.sysml.Type;
+import org.eclipse.syson.sysml.OccurrenceDefinition;
 import org.eclipse.syson.sysml.PartDefinition;
 import org.eclipse.sirius.components.core.services.ComposedReadOnlyObjectPredicate;
 import org.eclipse.sirius.web.application.object.services.DefaultReadOnlyObjectPredicate;
@@ -309,6 +310,34 @@ public class CommonCreationService {
         AllocationUsage allocation = this.metamodelMutationElementService.createAllocateEdge(source, target);
         this.metamodelMutationElementService.initialize(allocation);
         return allocation;
+    }
+
+    /**
+     * Creates a Mission in the selected System Analysis Capabilities package.
+     */
+    public OccurrenceUsage createMission(Element parent) {
+        return this.createSystemPurpose(parent, CommonQueryService.ARCADIA_MISSION, "M");
+    }
+
+    /**
+     * Creates a Capability in the selected System Analysis Capabilities package.
+     */
+    public OccurrenceUsage createCapability(Element parent) {
+        return this.createSystemPurpose(parent, ARCADIA_CAPABILITY, "C");
+    }
+
+    private OccurrenceUsage createSystemPurpose(Element parent, String type, String prefix) {
+        if (!this.commonQueryService.isSystemAnalysisCapabilitiesPackage(parent) || this.readOnlyPredicate.test(parent)
+                || !(new UtilService().findByNameAndType(parent, ARCADIA_PREFIX + type,
+                        Type.class) instanceof OccurrenceDefinition)) {
+            return null;
+        }
+        var usage = SysmlFactory.eINSTANCE.createOccurrenceUsage();
+        this.metamodelMutationElementService.addChildInParent(parent, usage);
+        this.arcadiaLibraryServices.typeWithLibrary(usage, ARCADIA_PREFIX + type, SysmlPackage.eINSTANCE.getOccurrenceDefinition());
+        this.metamodelMutationElementService.initialize(usage);
+        this.commonNamingService.setElementDefaultDeclaredName(usage, prefix);
+        return usage;
     }
 
     /**

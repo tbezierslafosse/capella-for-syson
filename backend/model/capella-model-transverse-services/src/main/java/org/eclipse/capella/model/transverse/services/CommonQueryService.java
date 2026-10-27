@@ -91,6 +91,8 @@ public class CommonQueryService {
 
     public static final String ARCADIA_CAPABILITY = "Capability";
 
+    public static final String ARCADIA_MISSION = "Mission";
+
     public static final String ARCADIA_ACTOR = "Actor";
 
     public static final String ARCADIA_FUNCTION = "Function";
@@ -469,6 +471,23 @@ public class CommonQueryService {
             return this.checkType(partUsage, ARCADIA_PREFIX + ARCADIA_COMPONENT);
         }
         return false;
+    }
+
+    /**
+     * Checks whether the object is an Arcadia Mission.
+     */
+    public boolean isMission(EObject object) {
+        return object instanceof OccurrenceUsage usage && this.checkType(usage, ARCADIA_PREFIX + ARCADIA_MISSION);
+    }
+
+    /**
+     * Returns Missions reachable from the context, including imported resources.
+     */
+    public List<OccurrenceUsage> getMissions(EObject context) {
+        return this.utilService.getAllReachable(context, SysmlPackage.eINSTANCE.getOccurrenceUsage()).stream()
+                .filter(this::isMission)
+                .map(OccurrenceUsage.class::cast)
+                .toList();
     }
 
     /**
@@ -1268,7 +1287,7 @@ public class CommonQueryService {
                  ARCADIA_PREFIX + ARCADIA_FUNCTIONAL_EXCHANGE,
                  ARCADIA_PREFIX + ARCADIA_EXCHANGE_ITEM,
                  "SysML::ExchangeItem" -> FUNCTIONS_PACKAGE;
-            case ARCADIA_PREFIX + ARCADIA_CAPABILITY -> CAPABILITIES_PACKAGE;
+            case ARCADIA_PREFIX + ARCADIA_CAPABILITY, ARCADIA_PREFIX + ARCADIA_MISSION -> CAPABILITIES_PACKAGE;
             case ARCADIA_PREFIX + ARCADIA_COMPONENT,
                  ARCADIA_PREFIX + ARCADIA_COMPONENT_EXCHANGE,
                  ARCADIA_PREFIX + ARCADIA_COMPONENT_PORT -> STRUCTURE_PACKAGE;

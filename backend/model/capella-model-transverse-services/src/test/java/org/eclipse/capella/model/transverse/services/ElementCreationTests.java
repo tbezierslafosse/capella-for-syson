@@ -429,4 +429,31 @@ public class ElementCreationTests extends AbstractSemanticTests {
         assertThat(this.commonCreationService.createHumanActor(foreign)).isNull();
     }
 
+
+    @Test
+    public void createMissionShouldUseTheSelectedCapabilitiesPackage() {
+        var context = this.capellaModel.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var mission = this.commonCreationService.createMission(context);
+        var capability = this.commonCreationService.createCapability(context);
+        assertThat(mission.getOwner()).isSameAs(context);
+        assertThat(capability.getOwner()).isSameAs(context);
+        assertThat(mission.getDeclaredName()).isEqualTo("M 1");
+        assertThat(capability.getDeclaredName()).isEqualTo("C 1");
+        assertThat(this.commonQueryService.isMission(mission)).isTrue();
+        assertThat(this.commonQueryService.isCapability(capability)).isTrue();
+        assertThat(this.commonQueryService.getMissions(context)).containsExactly(mission);
+    }
+
+    @Test
+    public void createCapabilityShouldRejectInvalidOwnersWithoutAddingElements() {
+        var context = this.capellaModel.getSystemAnalysisPerspective().getStructurePackage().getElement();
+        var children = List.copyOf(context.getOwnedElement());
+        assertThat(this.commonCreationService.createMission(context)).isNull();
+        assertThat(this.commonCreationService.createCapability(context)).isNull();
+        assertThat(context.getOwnedElement()).containsExactlyElementsOf(children);
+        var foreign = this.capellaModel.getLogicalArchitecturePerspective().getCapabilitiesPackage().getElement();
+        assertThat(this.commonCreationService.createMission(foreign)).isNull();
+        assertThat(this.commonCreationService.createCapability(foreign)).isNull();
+    }
+
 }

@@ -114,16 +114,18 @@ public class MCBViewServicesTests {
     }
 
     @Test
-    public void dropFromExplorerShouldAcceptSupportedNodesAndRejectOtherPerspectives() {
+    public void dropFromExplorerShouldAcceptTheFourNodeTypesAndRejectOtherPerspectives() {
         var context = this.model.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
-        var elements = List.of(this.creation.createHumanActor(context), this.creation.createRequirement(context));
+        var elements = List.of(this.creation.createHumanActor(context), this.creation.createMission(context), this.creation.createCapability(context), this.creation.createRequirement(context));
         var diagramContext = this.diagramContext(List.of());
-        var descriptions = this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME, "RequirementNodeDescription");
+        var descriptions = this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME, "MissionNodeDescription", "CapabilityNodeDescription", "RequirementNodeDescription");
         elements.forEach(element -> this.dropService.dropFromExplorer(element, null, this.editingContext, diagramContext, descriptions));
-        assertThat(diagramContext.viewCreationRequests()).hasSize(2);
+        assertThat(diagramContext.viewCreationRequests()).hasSize(4);
         var foreignActor = this.creation.createActor(this.model.getLogicalArchitecturePerspective().getStructurePackage().getElement());
         this.dropService.dropFromExplorer(foreignActor, null, this.editingContext, diagramContext, descriptions);
-        assertThat(diagramContext.viewCreationRequests()).hasSize(2);
+        assertThat(diagramContext.viewCreationRequests()).hasSize(4);
+        assertThat(this.queries.getCapabilityCandidates(context)).hasSize(1);
+        assertThat(this.queries.getMissionCandidates(context)).hasSize(1);
         assertThat(this.queries.getRequirementCandidates(context)).hasSize(1);
     }
 

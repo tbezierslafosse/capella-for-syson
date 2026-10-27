@@ -37,13 +37,14 @@ public class MCBDiagramPaletteProvider {
     public DiagramPalette createDiagramPalette(IViewDiagramElementFinder cache) {
         var tools = new MCBNodeToolProvider();
         return this.diagramBuilders.newDiagramPalette()
-                .nodeTools(tools.createActorTool(cache), tools.createRequirementTool(cache))
+                .nodeTools(tools.createActorTool(cache), tools.createMissionTool(cache), tools.createCapabilityTool(cache), tools.createRequirementTool(cache))
                 .dropTool(this.diagramBuilders.newDropTool().name("Drop from Explorer")
                         .body(this.viewBuilders.newChangeContext()
                                 .expression(ServiceMethod.of4(MCBViewDropService::dropFromExplorer).aqlSelf(Node.SELECTED_NODE, IEditingContext.EDITING_CONTEXT,
                                         DiagramContext.DIAGRAM_CONTEXT, ViewDiagramDescriptionConverter.CONVERTED_NODES_VARIABLE)).build()).build())
                 .dropNodeTool(this.diagramBuilders.newDropNodeTool().name("Drop from Diagram")
-                        .acceptedNodeTypes(cache.getNodeDescription("SystemActorNodeDescription").orElseThrow(), cache.getNodeDescription("RequirementNodeDescription").orElseThrow())
+                        .acceptedNodeTypes(cache.getNodeDescription("SystemActorNodeDescription").orElseThrow(), cache.getNodeDescription("MissionNodeDescription").orElseThrow(),
+                                cache.getNodeDescription("CapabilityNodeDescription").orElseThrow(), cache.getNodeDescription("RequirementNodeDescription").orElseThrow())
                         .body(this.viewBuilders.newChangeContext().expression(ServiceMethod.of4(MCBViewDropService::dropOnBackground)
                                 .aql("droppedElement", "droppedNode", IEditingContext.EDITING_CONTEXT, DiagramContext.DIAGRAM_CONTEXT,
                                         ViewDiagramDescriptionConverter.CONVERTED_NODES_VARIABLE)).build()).build())

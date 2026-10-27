@@ -41,7 +41,8 @@ public class MCBViewDescriptionProvider implements IViewDescriptionProvider {
     @Override
     public IColorProvider getColorProvider(View view) {
         var palette = ViewFactory.eINSTANCE.createColorPalette();
-        java.util.Map.of("ACTOR_BACKGROUND", "#D0F1FE", "ACTOR_BORDER", "#494997", "ACTOR_LABEL", "#000000",
+        java.util.Map.of("PURPOSE_BACKGROUND", "#E8E3C5", "PURPOSE_BORDER", "#6B5F2A", "PURPOSE_LABEL", "#1C2A3F",
+                "ACTOR_BACKGROUND", "#D0F1FE", "ACTOR_BORDER", "#494997", "ACTOR_LABEL", "#000000",
                 "REQUIREMENT_BACKGROUND", "#D8C3D6", "REQUIREMENT_BORDER", "#72496E", "REQUIREMENT_LABEL", "#72496E")
                 .forEach((name, value) -> {
                     var color = ViewFactory.eINSTANCE.createFixedColor();
