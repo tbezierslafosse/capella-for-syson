@@ -403,4 +403,30 @@ public class ElementCreationTests extends AbstractSemanticTests {
         assertThat(generalization.getSubsettedFeature()).isSameAs(targetCapability);
     }
 
+
+    @Test
+    public void createHumanActorShouldUseTheSystemStructureAndSupportNonHumanParents() {
+        var context = this.capellaModel.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var actor = this.commonCreationService.createHumanActor(context);
+        assertThat(actor.getOwner()).isSameAs(this.capellaModel.getSystemAnalysisPerspective().getStructurePackage().getElement());
+        assertThat(this.commonQueryService.isSystemAnalysisActor(actor)).isTrue();
+        assertThat(this.commonQueryService.isComponentHumanActor(actor)).isTrue();
+        var parent = this.commonCreationService.createActor(context);
+        var nested = this.commonCreationService.createHumanActor(parent);
+        assertThat(nested.getOwner()).isSameAs(parent);
+        assertThat(this.commonQueryService.canContainSystemActor(parent)).isTrue();
+    }
+
+    @Test
+    public void createHumanActorShouldRejectHumanParentsAndOtherPerspectives() {
+        var context = this.capellaModel.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var human = this.commonCreationService.createHumanActor(context);
+        var children = List.copyOf(human.getOwnedElement());
+        assertThat(this.commonQueryService.canContainSystemActor(human)).isFalse();
+        assertThat(this.commonCreationService.createHumanActor(human)).isNull();
+        assertThat(human.getOwnedElement()).containsExactlyElementsOf(children);
+        var foreign = this.capellaModel.getLogicalArchitecturePerspective().getStructurePackage().getElement();
+        assertThat(this.commonCreationService.createHumanActor(foreign)).isNull();
+    }
+
 }

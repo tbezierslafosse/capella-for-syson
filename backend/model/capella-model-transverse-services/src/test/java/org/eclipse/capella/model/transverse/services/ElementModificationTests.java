@@ -260,4 +260,31 @@ public class ElementModificationTests extends AbstractSemanticTests {
         assertThat(this.commonQueryService.getIsRealizedBy(firstRealized)).isEmpty();
         assertThat(this.commonQueryService.getIsRealizedBy(secondRealized)).isEmpty();
     }
+
+    @Test
+    public void setSystemActorContainerShouldSupportNestingAndReturningToTheStructure() {
+        var context = this.capellaModel.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var parent = this.commonCreationService.createActor(context);
+        var child = this.commonCreationService.createHumanActor(context);
+        assertThat(this.commonUpdateService.setSystemActorContainer(child, parent)).isTrue();
+        assertThat(child.getOwner()).isSameAs(parent);
+        var structure = this.capellaModel.getSystemAnalysisPerspective().getStructurePackage().getElement();
+        assertThat(this.commonUpdateService.setSystemActorContainer(child, structure)).isTrue();
+        assertThat(child.getOwner()).isSameAs(structure);
+    }
+
+    @Test
+    public void setSystemActorContainerShouldRejectCyclesHumanParentsAndOtherPerspectives() {
+        var context = this.capellaModel.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var parent = this.commonCreationService.createActor(context);
+        var human = this.commonCreationService.createHumanActor(parent);
+        var owner = parent.getOwner();
+        assertThat(this.commonUpdateService.setSystemActorContainer(parent, human)).isFalse();
+        assertThat(this.commonUpdateService.setSystemActorContainer(parent, parent)).isFalse();
+        var foreign = this.capellaModel.getLogicalArchitecturePerspective().getStructurePackage().getElement();
+        assertThat(this.commonUpdateService.setSystemActorContainer(parent, foreign)).isFalse();
+        assertThat(parent.getOwner()).isSameAs(owner);
+        assertThat(human.getOwner()).isSameAs(parent);
+    }
+
 }

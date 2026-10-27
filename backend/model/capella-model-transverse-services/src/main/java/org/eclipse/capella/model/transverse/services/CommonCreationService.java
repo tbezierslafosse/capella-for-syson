@@ -32,6 +32,12 @@ import static org.eclipse.capella.model.transverse.services.CommonQueryService.A
 import java.util.List;
 import java.util.Optional;
 
+import org.eclipse.syson.services.UtilService;
+import org.eclipse.syson.sysml.Type;
+import org.eclipse.syson.sysml.PartDefinition;
+import org.eclipse.sirius.components.core.services.ComposedReadOnlyObjectPredicate;
+import org.eclipse.sirius.web.application.object.services.DefaultReadOnlyObjectPredicate;
+import org.eclipse.syson.application.services.SysONReadOnlyObjectPredicateDelegate;
 import org.eclipse.syson.sysml.ActionUsage;
 import org.eclipse.syson.sysml.AllocationUsage;
 import org.eclipse.syson.sysml.Element;
@@ -71,6 +77,9 @@ public class CommonCreationService {
     private final MetamodelMutationElementService metamodelMutationElementService;
 
     private final CommonNamingService commonNamingService;
+
+    private final ComposedReadOnlyObjectPredicate readOnlyPredicate = new ComposedReadOnlyObjectPredicate(
+            List.of(new SysONReadOnlyObjectPredicateDelegate()), new DefaultReadOnlyObjectPredicate());
 
     private final Logger logger = LoggerFactory.getLogger(CommonCreationService.class);
 
@@ -300,6 +309,23 @@ public class CommonCreationService {
         AllocationUsage allocation = this.metamodelMutationElementService.createAllocateEdge(source, target);
         this.metamodelMutationElementService.initialize(allocation);
         return allocation;
+    }
+
+    /**
+     * Creates a human actor under a valid non-human actor or in the System Analysis Structure package.
+     */
+    public PartUsage createHumanActor(Element context) {
+        Element parent = context;
+        if (this.commonQueryService.isSystemAnalysisCapabilitiesPackage(context)) {
+            parent = this.commonQueryService.getStructurePackage(context).orElse(null);
+        }
+        if (!this.commonQueryService.canContainSystemActor(parent) || this.readOnlyPredicate.test(parent)
+                || !(new UtilService().findByNameAndType(parent, ARCADIA_PREFIX + CommonQueryService.ARCADIA_COMPONENT, Type.class) instanceof PartDefinition)) {
+            return null;
+        }
+        var actor = this.createActor(parent);
+        this.commonUpdateService.setBooleanAttribute(actor, ARCADIA_PREFIX + CommonQueryService.ARCADIA_COMPONENT, CommonQueryService.ARCADIA_IS_HUMAN, true);
+        return actor;
     }
 
     public OccurrenceUsage createOperationalCapability(Element parent) {

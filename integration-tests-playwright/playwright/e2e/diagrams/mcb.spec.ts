@@ -47,15 +47,17 @@ test.describe('MCB diagram', () => {
     await new PlaywrightWorkbench(page).openRepresentation('mcb-representation');
     const canvas = page.getByTestId('rf__wrapper');
     const diagram = new PlaywrightDiagram(page);
-    const tools = ['New Requirement'];
+    const tools = ['New System Actor', 'New Requirement'];
     for (const [index, tool] of tools.entries()) {
       await canvas.click({ button: 'right', position: { x: 50 + index * 220, y: 100 } });
       await expect(page.getByTestId('Palette')).toBeVisible();
       await diagram.waitForInitialLayout(() => page.getByTestId(`tool-${tool}`).click());
     }
     await expect(page.getByText('Requirement 1', { exact: true })).toBeVisible();
+    await expect(canvas.locator('[data-testid^="FreeForm - A "] img[src$="/icons/full/obj16/ActorHuman.svg"]')).toBeVisible();
     await page.reload();
     await expect(canvas).toBeVisible();
     await expect(page.getByText('Requirement 1', { exact: true })).toBeVisible();
+    await expect(canvas.locator('[data-testid^="FreeForm - A "] img[src$="/icons/full/obj16/ActorHuman.svg"]')).toBeVisible();
   });
 });

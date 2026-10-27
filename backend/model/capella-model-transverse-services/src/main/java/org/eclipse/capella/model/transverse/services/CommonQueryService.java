@@ -471,6 +471,26 @@ public class CommonQueryService {
         return false;
     }
 
+    /**
+     * Checks whether an actor belongs to the System Analysis Structure package.
+     */
+    public boolean isSystemAnalysisActor(Element element) {
+        return this.isComponent(element) && this.isComponentActor(element)
+                && this.getArcadiaPerspective(element).filter(ArcadiaEngineeringPerspective.SystemAnalysis::equals).isPresent()
+                && this.getStructurePackage(element).filter(parent -> EcoreUtil.isAncestor(parent, element)).isPresent();
+    }
+
+    /**
+     * Checks whether the semantic parent can contain a System Analysis actor.
+     */
+    public boolean canContainSystemActor(Element parent) {
+        if (this.isSystemAnalysisActor(parent)) {
+            return !this.isComponentHumanActor(parent);
+        }
+        return parent instanceof Package && this.getArcadiaPerspective(parent).filter(ArcadiaEngineeringPerspective.SystemAnalysis::equals).isPresent()
+                && this.getStructurePackage(parent).filter(parent::equals).isPresent();
+    }
+
     public Boolean isCapability(EObject eObject) {
         return eObject instanceof OccurrenceUsage occurrenceUsage
                 && this.checkType(occurrenceUsage, ARCADIA_PREFIX + ARCADIA_CAPABILITY);

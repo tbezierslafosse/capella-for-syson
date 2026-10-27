@@ -52,7 +52,7 @@ public class MCBDiagramDescriptionTests extends AbstractEditableDiagramDescripti
     public void nodesShouldHaveCompletePalettesAndRemainUnsynchronized() {
         var nodes = this.diagramDescription.getNodeDescriptions();
         assertThat(nodes).extracting(node -> node.getName())
-                .containsExactlyInAnyOrder("RequirementNodeDescription");
+                .containsExactlyInAnyOrder("SystemActorNodeDescription", "RequirementNodeDescription");
         assertThat(nodes).allSatisfy(node -> {
             assertThat(node.getSynchronizationPolicy()).isEqualTo(SynchronizationPolicy.UNSYNCHRONIZED);
             assertThat(node.getPalette().getLabelEditTool()).isNotNull();
@@ -60,14 +60,14 @@ public class MCBDiagramDescriptionTests extends AbstractEditableDiagramDescripti
             assertThat(node.getPalette().getQuickAccessTools()).extracting(tool -> tool.getName()).contains("Delete from Diagram");
             assertThat(node.getEdgeTools()).isEmpty();
         });
-        assertThat(nodes).filteredOn(node -> "RequirementNodeDescription".equals(node.getName()))
+        assertThat(nodes).filteredOn(node -> "SystemActorNodeDescription".equals(node.getName()) || "RequirementNodeDescription".equals(node.getName()))
                 .allSatisfy(node -> assertThat(node.getUserResizable()).isEqualTo(UserResizableDirection.BOTH));
         assertThat(this.diagramDescription.getPalette().getNodeTools()).extracting(tool -> tool.getName())
-                .containsExactly("New Requirement");
+                .containsExactly("New System Actor", "New Requirement");
     }
 
     @ParameterizedTest
-    @CsvSource({ "RequirementNodeDescription, #D8C3D6, #72496E, #72496E" })
+    @CsvSource({ "RequirementNodeDescription, #D8C3D6, #72496E, #72496E", "SystemActorNodeDescription, #D0F1FE, #494997, #000000" })
     public void nodesShouldUseTheStandardCapellaColors(String descriptionName, String background, String border, String label) {
         var node = this.diagramDescription.getNodeDescriptions().stream().filter(candidate -> descriptionName.equals(candidate.getName())).findFirst().orElseThrow();
         assertThat(node.getStyle()).isInstanceOfSatisfying(RectangularNodeStyleDescription.class, style -> {
@@ -75,6 +75,20 @@ public class MCBDiagramDescriptionTests extends AbstractEditableDiagramDescripti
             assertThat(style.getBorderColor()).isInstanceOfSatisfying(FixedColor.class, color -> assertThat(color.getValue()).isEqualTo(border));
         });
         assertThat(node.getInsideLabel().getStyle().getLabelColor()).isInstanceOfSatisfying(FixedColor.class, color -> assertThat(color.getValue()).isEqualTo(label));
+    }
+
+    @Test
+    public void actorsShouldAdaptTheirIconToTheirHumanProperty() {
+        var node = this.diagramDescription.getNodeDescriptions().stream().filter(candidate -> "SystemActorNodeDescription".equals(candidate.getName())).findFirst().orElseThrow();
+        assertThat(node.getInsideLabel().getStyle().getLabelIcon()).isEqualTo("/icons/full/obj16/SystemActor.svg");
+        assertThat(node.getInsideLabel().getConditionalStyles()).singleElement().satisfies(style -> {
+            assertThat(style.getCondition()).isEqualTo("aql:self.isComponentHumanActor()");
+            assertThat(style.getStyle().getLabelIcon()).isEqualTo("/icons/full/obj16/ActorHuman.svg");
+        });
+        assertThat(this.diagramDescription.getPalette().getNodeTools()).filteredOn(tool -> "New System Actor".equals(tool.getName()))
+                .singleElement().satisfies(tool -> assertThat(tool.getIconURLsExpression()).isEqualTo("/icons/full/obj16/SystemActor.svg"));
+        assertThat(node.getPalette().getNodeTools()).filteredOn(tool -> "New System Actor".equals(tool.getName()))
+                .singleElement().satisfies(tool -> assertThat(tool.getIconURLsExpression()).isEqualTo("/icons/full/obj16/SystemActor.svg"));
     }
 
     @Test

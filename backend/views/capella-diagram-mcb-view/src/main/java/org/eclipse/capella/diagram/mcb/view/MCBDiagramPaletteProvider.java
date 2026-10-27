@@ -19,6 +19,7 @@ import org.eclipse.sirius.components.view.builder.IViewDiagramElementFinder;
 import org.eclipse.sirius.components.view.builder.generated.diagram.DiagramBuilders;
 import org.eclipse.sirius.components.view.builder.generated.view.ViewBuilders;
 import org.eclipse.sirius.components.view.diagram.DiagramPalette;
+import org.eclipse.sirius.components.view.diagram.DropNodeTool;
 import org.eclipse.sirius.components.view.emf.diagram.ViewDiagramDescriptionConverter;
 import org.eclipse.syson.util.ServiceMethod;
 
@@ -36,15 +37,24 @@ public class MCBDiagramPaletteProvider {
     public DiagramPalette createDiagramPalette(IViewDiagramElementFinder cache) {
         var tools = new MCBNodeToolProvider();
         return this.diagramBuilders.newDiagramPalette()
-                .nodeTools(tools.createRequirementTool(cache))
+                .nodeTools(tools.createActorTool(cache), tools.createRequirementTool(cache))
                 .dropTool(this.diagramBuilders.newDropTool().name("Drop from Explorer")
                         .body(this.viewBuilders.newChangeContext()
                                 .expression(ServiceMethod.of4(MCBViewDropService::dropFromExplorer).aqlSelf(Node.SELECTED_NODE, IEditingContext.EDITING_CONTEXT,
                                         DiagramContext.DIAGRAM_CONTEXT, ViewDiagramDescriptionConverter.CONVERTED_NODES_VARIABLE)).build()).build())
                 .dropNodeTool(this.diagramBuilders.newDropNodeTool().name("Drop from Diagram")
-                        .acceptedNodeTypes(cache.getNodeDescription("RequirementNodeDescription").orElseThrow())
-                        .body(this.viewBuilders.newChangeContext().expression("aql:droppedElement").build()).build())
+                        .acceptedNodeTypes(cache.getNodeDescription("SystemActorNodeDescription").orElseThrow(), cache.getNodeDescription("RequirementNodeDescription").orElseThrow())
+                        .body(this.viewBuilders.newChangeContext().expression(ServiceMethod.of4(MCBViewDropService::dropOnBackground)
+                                .aql("droppedElement", "droppedNode", IEditingContext.EDITING_CONTEXT, DiagramContext.DIAGRAM_CONTEXT,
+                                        ViewDiagramDescriptionConverter.CONVERTED_NODES_VARIABLE)).build()).build())
                 .build();
     }
 
+    public DropNodeTool createActorDropTool(IViewDiagramElementFinder cache) {
+        return this.diagramBuilders.newDropNodeTool().name("Drop from Diagram")
+                .acceptedNodeTypes(cache.getNodeDescription("SystemActorNodeDescription").orElseThrow())
+                .body(this.viewBuilders.newChangeContext().expression(ServiceMethod.of6(MCBViewDropService::dropIntoActor)
+                        .aql("droppedElement", "droppedNode", "targetElement", "targetNode", IEditingContext.EDITING_CONTEXT,
+                                DiagramContext.DIAGRAM_CONTEXT, ViewDiagramDescriptionConverter.CONVERTED_NODES_VARIABLE)).build()).build();
+    }
 }

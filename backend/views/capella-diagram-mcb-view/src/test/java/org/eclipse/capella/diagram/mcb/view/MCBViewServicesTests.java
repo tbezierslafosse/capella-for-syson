@@ -23,7 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.capella.diagram.mcb.view.nodes.actor.SystemActorNodeDescriptionProvider;
 import org.eclipse.capella.model.transverse.services.CommonCreationService;
+import org.eclipse.capella.model.transverse.services.CommonQueryService;
+import org.eclipse.capella.model.transverse.services.CommonUpdateService;
+import org.eclipse.capella.model.transverse.services.CommonViewCreationRequestSubtreeService;
 import org.eclipse.capella.tests.fixtures.CapellaModel;
 import org.eclipse.capella.tests.fixtures.SemanticDataTestFixture;
 import org.eclipse.sirius.components.collaborative.diagrams.DiagramContext;
@@ -36,6 +40,7 @@ import org.eclipse.sirius.components.diagrams.Node;
 import org.eclipse.sirius.components.diagrams.description.NodeDescription;
 import org.eclipse.sirius.components.view.diagram.DiagramFactory;
 import org.eclipse.syson.sysml.Element;
+import org.eclipse.syson.sysml.PartUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,17 +77,87 @@ public class MCBViewServicesTests {
     }
 
     @Test
+    public void dropFromExplorerShouldRevealAncestorsOnceWithoutChangingSemantics() {
+        var context = this.model.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var parent = this.creation.createActor(context);
+        var child = this.creation.createHumanActor(parent);
+        var before = new CommonQueryService().getDescendants(this.model.getSystemAnalysisPerspective().getElement(), element -> true);
+        var diagramContext = this.diagramContext(List.of());
+        var descriptions = this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME);
+        this.dropService.dropFromExplorer(child, null, this.editingContext, diagramContext, descriptions);
+        this.dropService.dropFromExplorer(child, null, this.editingContext, diagramContext, descriptions);
+        assertThat(diagramContext.viewCreationRequests()).hasSize(2);
+        var parentRequest = diagramContext.viewCreationRequests().getFirst();
+        var childRequest = diagramContext.viewCreationRequests().getLast();
+        assertThat(parentRequest.getTargetObjectId()).isEqualTo(parent.getElementId());
+        assertThat(childRequest.getParentElementId()).isEqualTo(new CommonViewCreationRequestSubtreeService().getNodeIdFromViewCreationRequest(parentRequest));
+        assertThat(new CommonQueryService().getDescendants(this.model.getSystemAnalysisPerspective().getElement(), element -> true)).containsExactlyElementsOf(before);
+        assertThat(parent.getOwner()).isSameAs(this.model.getSystemAnalysisPerspective().getStructurePackage().getElement());
+        assertThat(child.getOwner()).isSameAs(parent);
+    }
+
+    @Test
+    public void dropFromExplorerShouldReuseVisibleParentsAndRejectInvalidChainsAtomically() {
+        var context = this.model.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var parent = this.creation.createActor(context);
+        var child = this.creation.createHumanActor(parent);
+        var diagramContext = this.diagramContext(List.of(this.node(parent, List.of())));
+        this.dropService.dropFromExplorer(child, null, this.editingContext, diagramContext, this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME));
+        assertThat(diagramContext.viewCreationRequests()).hasSize(1);
+        assertThat(diagramContext.viewCreationRequests().getFirst().getParentElementId()).isEqualTo("node-" + parent.getElementId());
+        var invalidContext = this.diagramContext(List.of());
+        this.dropService.dropFromExplorer(child, null, this.editingContext, invalidContext, Map.of());
+        assertThat(invalidContext.viewCreationRequests()).isEmpty();
+        new CommonUpdateService().setBooleanAttribute(parent, CommonQueryService.ARCADIA_PREFIX + CommonQueryService.ARCADIA_COMPONENT, CommonQueryService.ARCADIA_IS_HUMAN, true);
+        this.dropService.dropFromExplorer(child, null, this.editingContext, invalidContext, this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME));
+        assertThat(invalidContext.viewCreationRequests()).isEmpty();
+    }
+
+    @Test
     public void dropFromExplorerShouldAcceptSupportedNodesAndRejectOtherPerspectives() {
         var context = this.model.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
-        var elements = List.of(this.creation.createRequirement(context));
+        var elements = List.of(this.creation.createHumanActor(context), this.creation.createRequirement(context));
         var diagramContext = this.diagramContext(List.of());
-        var descriptions = this.descriptions("RequirementNodeDescription");
+        var descriptions = this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME, "RequirementNodeDescription");
         elements.forEach(element -> this.dropService.dropFromExplorer(element, null, this.editingContext, diagramContext, descriptions));
-        assertThat(diagramContext.viewCreationRequests()).hasSize(1);
+        assertThat(diagramContext.viewCreationRequests()).hasSize(2);
         var foreignActor = this.creation.createActor(this.model.getLogicalArchitecturePerspective().getStructurePackage().getElement());
         this.dropService.dropFromExplorer(foreignActor, null, this.editingContext, diagramContext, descriptions);
-        assertThat(diagramContext.viewCreationRequests()).hasSize(1);
+        assertThat(diagramContext.viewCreationRequests()).hasSize(2);
         assertThat(this.queries.getRequirementCandidates(context)).hasSize(1);
+    }
+
+    @Test
+    public void dropIntoActorShouldPreserveVisibleDescendantsAndAllowReturnToBackground() {
+        var context = this.model.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var parent = this.creation.createActor(context);
+        var moved = this.creation.createActor(context);
+        var child = this.creation.createHumanActor(moved);
+        var movedNode = this.node(moved, List.of(this.node(child, List.of())));
+        var targetNode = this.node(parent, List.of());
+        var diagramContext = this.diagramContext(List.of(targetNode, movedNode));
+        var descriptions = this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME);
+        this.dropService.dropIntoActor(moved, movedNode, parent, targetNode, this.editingContext, diagramContext, descriptions);
+        assertThat(moved.getOwner()).isSameAs(parent);
+        assertThat(diagramContext.viewCreationRequests()).hasSize(2);
+        assertThat(diagramContext.viewDeletionRequests()).hasSize(1);
+        var background = this.diagramContext(List.of(movedNode));
+        this.dropService.dropOnBackground(moved, movedNode, this.editingContext, background, descriptions);
+        assertThat(moved.getOwner()).isSameAs(this.model.getSystemAnalysisPerspective().getStructurePackage().getElement());
+        assertThat(background.viewCreationRequests()).hasSize(2);
+    }
+
+    @Test
+    public void dropIntoActorShouldRejectHumanParentsWithoutChangingViewsOrModel() {
+        var context = this.model.getSystemAnalysisPerspective().getCapabilitiesPackage().getElement();
+        var human = this.creation.createHumanActor(context);
+        var child = this.creation.createHumanActor(context);
+        var diagramContext = this.diagramContext(List.of());
+        var owner = child.getOwner();
+        this.dropService.dropIntoActor(child, this.node(child, List.of()), human, this.node(human, List.of()), this.editingContext, diagramContext, this.descriptions(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME));
+        assertThat(child.getOwner()).isSameAs(owner);
+        assertThat(diagramContext.viewCreationRequests()).isEmpty();
+        assertThat(diagramContext.viewDeletionRequests()).isEmpty();
     }
 
     private DiagramContext diagramContext(List<Node> nodes) {
@@ -103,4 +178,13 @@ public class MCBViewServicesTests {
         return result;
     }
 
+    private Node node(PartUsage actor, List<Node> children) {
+        var node = mock(Node.class);
+        when(node.getId()).thenReturn("node-" + actor.getElementId());
+        when(node.getTargetObjectId()).thenReturn(actor.getElementId());
+        when(node.getDescriptionId()).thenReturn(SystemActorNodeDescriptionProvider.NODE_DESCRIPTION_NAME);
+        when(node.getChildNodes()).thenReturn(children);
+        when(node.getBorderNodes()).thenReturn(List.of());
+        return node;
+    }
 }
