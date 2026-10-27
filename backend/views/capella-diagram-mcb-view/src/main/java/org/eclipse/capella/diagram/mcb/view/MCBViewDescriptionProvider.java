@@ -14,6 +14,7 @@ package org.eclipse.capella.diagram.mcb.view;
 
 import org.eclipse.capella.diagram.common.view.IViewDescriptionProvider;
 import org.eclipse.sirius.components.view.View;
+import org.eclipse.sirius.components.view.ViewFactory;
 import org.eclipse.sirius.components.view.builder.providers.IColorProvider;
 import org.eclipse.sirius.components.view.builder.providers.IRepresentationDescriptionProvider;
 import org.eclipse.syson.services.ColorProvider;
@@ -39,6 +40,15 @@ public class MCBViewDescriptionProvider implements IViewDescriptionProvider {
 
     @Override
     public IColorProvider getColorProvider(View view) {
+        var palette = ViewFactory.eINSTANCE.createColorPalette();
+        java.util.Map.of("REQUIREMENT_BACKGROUND", "#D8C3D6", "REQUIREMENT_BORDER", "#72496E", "REQUIREMENT_LABEL", "#72496E")
+                .forEach((name, value) -> {
+                    var color = ViewFactory.eINSTANCE.createFixedColor();
+                    color.setName(name);
+                    color.setValue(value);
+                    palette.getColors().add(color);
+                });
+        view.getColorPalettes().add(palette);
         return new ColorProvider(view);
     }
 }
