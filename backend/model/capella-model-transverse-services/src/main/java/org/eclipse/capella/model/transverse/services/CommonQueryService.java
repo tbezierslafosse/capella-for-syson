@@ -547,6 +547,15 @@ public class CommonQueryService {
                         .isPresent();
     }
 
+    /**
+     * Checks whether the element belongs to the System Analysis perspective.
+     */
+    public boolean isSystemAnalysisPerspective(Element element) {
+        return this.getArcadiaPerspective(element)
+                .filter(ArcadiaEngineeringPerspective.SystemAnalysis::equals)
+                .isPresent();
+    }
+
     public boolean isOperationalAnalysisCapabilitiesPackage(Object element) {
         return element instanceof Package packageElt
                 && CAPABILITIES_PACKAGE.equals(packageElt.getDeclaredName())
@@ -562,7 +571,7 @@ public class CommonQueryService {
      */
     public boolean isSystemAnalysisCapabilitiesPackage(Object element) {
         if (element instanceof Package packageElt
-                && this.getArcadiaPerspective(packageElt).filter(ArcadiaEngineeringPerspective.SystemAnalysis::equals).isPresent()) {
+                && this.isSystemAnalysisPerspective(packageElt)) {
             return this.getCapabilitiesPackage(packageElt)
                     .filter(capabilitiesPackage -> EcoreUtil.isAncestor(capabilitiesPackage, packageElt))
                     .isPresent();
